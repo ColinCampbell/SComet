@@ -20,12 +20,16 @@ SComet.Comet = SC.DataSource.create(
   _store: null,
   
   _query: null,
+  
+  cancelRequest: function() {
+    if (this._response) SC.Request.manager.cancel(this._response); 
+  },
     
   isEnabledDidChange: function(target, key, value, propertyRevision) {
     if (SComet.userDefaults.get('isEnabled')) {
       this.fetch(this._store, this._query);
-    } else if (!SC.none(this._response)) {
-      SC.Request.manager.cancel(this._response);
+    } else {
+      this.cancelRequest();
     }
   }.observes('SComet.userDefaults.isEnabled'),
   
@@ -37,9 +41,11 @@ SComet.Comet = SC.DataSource.create(
     this._query = query;
     
     if (!SC.none(url)) {
+      this.cancelRequest();
+
       url += !SC.none(this._lastTimeAsked) ? "?since=" + this._lastTimeAsked : "";
-      if (this._response) SC.Request.manager.cancel(this._response); 
-      this._response = SC.Request.getUrl(url)
+      this._response = SC.Request
+        .getUrl(url)
         .json()
         .notify(this, 'didFetch', store, query)
         .send();
